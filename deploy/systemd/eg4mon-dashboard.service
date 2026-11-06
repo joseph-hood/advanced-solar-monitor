@@ -1,0 +1,18 @@
+[Unit]
+Description=eg4mon Streamlit dashboard
+After=network-online.target
+Wants=network-online.target
+After=eg4mon-api.service
+
+[Service]
+Type=simple
+User=eg4mon
+WorkingDirectory=/opt/eg4mon
+EnvironmentFile=/opt/eg4mon/.env
+ExecStart=/opt/eg4mon/.venv/bin/eg4mon dashboard
+Restart=always
+RestartSec=10
+# The collector saves estimator state every step, so restarts are safe.
+
+[Install]
+WantedBy=multi-user.target

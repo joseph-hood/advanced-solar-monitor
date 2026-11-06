@@ -1,0 +1,26 @@
+# Collector / estimator-service behaviour (HANDOFF 3.3, 4.1).
+limits:
+  v_min: 40.0           # V, samples outside are rejected and logged
+  v_max: 60.0
+  p_abs_max: 20000.0    # W
+
+current:
+  # Use a published battery current instead of P/V when the source has one.
+  # Compare against P/V for a day before enabling.
+  prefer_measured: false
+
+gap:
+  threshold_s: 900      # dt above this is a gap: integrate I=0, no EKF, degraded
+  sigma_per_hour: 0.05  # SOC sigma added per hour of gap (unknown current)
+  sigma_min: 0.05       # minimum sigma added for any gap
+  sigma_max: 0.30
+
+degraded:
+  clear_sigma: 0.03     # degraded clears on full reset or when sqrt(Pcov) drops below this
+
+cold_start:
+  soc: 0.8              # used when no saved state and no BMS SOC
+  pcov: 0.04
+
+retention:
+  raw_days: 0           # 0 = keep raw readings forever; daily/cycle rollups are always kept

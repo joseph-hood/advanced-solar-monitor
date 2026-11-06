@@ -1,0 +1,30 @@
+# docker compose up -d   (reads .env for credentials and settings)
+x-common: &common
+  build: .
+  env_file: .env
+  environment:
+    DB_PATH: /data/eg4mon.sqlite   # overrides the .env value inside the containers
+  volumes: [eg4mon-data:/data]     # read-write for all: SQLite WAL readers need the -shm file
+  restart: unless-stopped
+
+services:
+  collector:
+    <<: *common
+    command: eg4mon collect
+
+  api:
+    <<: *common
+    command: eg4mon api
+    ports: ["8000:8000"]
+
+  dashboard:
+    <<: *common
+    command: streamlit run app/streamlit_app.py --server.address 0.0.0.0 --server.port 8501
+    environment:
+      DB_PATH: /data/eg4mon.sqlite
+      DASHBOARD_API_URL: http://api:8000
+    ports: ["8501:8501"]
+    depends_on: [api]
+
+volumes:
+  eg4mon-data:

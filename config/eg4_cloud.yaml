@@ -1,0 +1,40 @@
+# Field map for the EG4 cloud (monitor.eg4electronics.com "WManage") API.
+#
+# Each signal is a list of terms that are summed:  {path, scale}.
+# `path` is a dotted path into the JSON response; `scale` multiplies the raw value.
+# A signal is omitted when none of its terms are present.
+# Run `eg4mon discover` to dump the raw responses for your devices and adjust.
+#
+# Sign convention used everywhere downstream:
+#   battery_p  + = charging      grid_w + = import      load_w + = consumption
+
+inverter:            # /WManage/api/inverter/getInverterRuntime, one call per serial
+  numeric:
+    battery_v:     [{path: vBat, scale: 0.1}]                 # 530 -> 53.0 V
+    battery_p:     [{path: pCharge}, {path: pDisCharge, scale: -1}]
+    soc_inverter:  [{path: soc}]
+    pv1_w:         [{path: ppv1}]
+    pv2_w:         [{path: ppv2}]
+    pv3_w:         [{path: ppv3}]
+    grid_w:        [{path: pToUser}, {path: pToGrid, scale: -1}]
+    load_w:        [{path: consumptionPower}]
+    inverter_w:    [{path: pinv}]
+    eps_w:         [{path: peps}]
+    inverter_temp_c: [{path: tinner}]
+  text:
+    status: statusText
+  # Freshness key: a sample is only emitted when this changes, so stale cloud
+  # data is never fed to the estimator twice.
+  freshness: deviceTime
+  # When several inverter serials are configured (parallel system on one bank)
+  # these signals are averaged instead of summed.
+  average: [battery_v, soc_inverter, inverter_temp_c]
+
+gridboss:            # /WManage/api/midbox/getMidboxRuntime; overrides inverter values when present
+  numeric:
+    grid_w:        [{path: midboxData.gridL1ActivePower}, {path: midboxData.gridL2ActivePower}]
+    load_w:        [{path: midboxData.loadL1ActivePower}, {path: midboxData.loadL2ActivePower}]
+    ups_w:         [{path: midboxData.upsL1ActivePower}, {path: midboxData.upsL2ActivePower}]
+    gen_w:         [{path: midboxData.genL1ActivePower}, {path: midboxData.genL2ActivePower}]
+    grid_v:        [{path: midboxData.gridRmsVolt, scale: 0.1}]
+  text: {}
