@@ -37,6 +37,10 @@ class FakePortal:
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         form = dict(x.split("=", 1) for x in request.content.decode().split("&") if x)
+        if "json" not in request.headers.get("accept", ""):
+            # what the real portal does for a plain form post
+            return httpx.Response(200, text="<html><title>Login</title></html>",
+                                  headers={"content-type": "text/html;charset=UTF-8"})
         if request.url.path == "/WManage/api/login":
             self.logins += 1
             ok = form.get("password") == "pw"
@@ -118,5 +122,35 @@ def test_samples_loop_backs_off_on_errors():
                 pass
         assert sleeps == [10, 20, 40]
         assert src.status()["last_error"]
+        await c.aclose()
+    asyncio.run(go())
+
+
+def _html(request):
+    return httpx.Response(200, text="<!DOCTYPE html><html><head><title>EG4 Login</title></html>",
+                          headers={"content-type": "text/html;charset=UTF-8"})
+
+
+def test_login_falls_back_to_legacy_path():
+    def portal(request):
+        if request.url.path == "/WManage/web/login":
+            return httpx.Response(200, json={"success": True})
+        return _html(request)
+
+    async def go():
+        c = EG4CloudClient("https://portal.test", "me", "pw", transport=httpx.MockTransport(portal))
+        assert (await c.login())["success"] is True
+        await c.aclose()
+    asyncio.run(go())
+
+
+def test_login_html_error_is_diagnosable():
+    async def go():
+        c = EG4CloudClient("https://portal.test", "me", "secret-pw", transport=httpx.MockTransport(_html))
+        with pytest.raises(EG4AuthError) as ei:
+            await c.login()
+        msg = str(ei.value)
+        assert "text/html" in msg and "EG4 Login" in msg and "EG4_BASE_URL" in msg
+        assert "secret-pw" not in msg
         await c.aclose()
     asyncio.run(go())
