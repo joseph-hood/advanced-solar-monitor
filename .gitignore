@@ -1,0 +1,15 @@
+.env
+data/
+discovery/
+topics_sample.txt
+*.sqlite
+*.sqlite-*
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+build/
+dist/
+.streamlit/secrets.toml

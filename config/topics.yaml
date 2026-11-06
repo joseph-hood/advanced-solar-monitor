@@ -1,0 +1,26 @@
+# SolarAssistant MQTT topic map (future data source; set EG4MON_SOURCE=solar_assistant).
+#
+# DO NOT trust these names: capture what your SolarAssistant actually publishes first
+#   mosquitto_sub -h <pi-host> -t 'solar_assistant/#' -v | tee topics_sample.txt
+# then fix this file. `scale` multiplies the raw value (use -1 to flip a sign).
+#
+# A sample is emitted whenever a `trigger` topic arrives and battery_v is known.
+prefix: solar_assistant
+trigger: [battery_p, battery_i]
+numeric:
+  battery_v:     {topic: battery_1/voltage/state}
+  battery_p:     {topic: battery_1/power/state}          # VERIFY SIGN against the SA UI
+  battery_i:     {topic: battery_1/current/state}        # optional
+  soc_inverter:  {topic: inverter_1/battery_state_of_charge/state}
+  pv1_w:         {topic: inverter_1/pv_power_1/state}
+  pv2_w:         {topic: inverter_1/pv_power_2/state}
+  grid_w:        {topic: inverter_1/grid_power/state}
+  load_w:        {topic: inverter_1/load_power/state}
+  # Daly BMS (only if SolarAssistant reads it)
+  bms_soc:       {topic: battery_1/state_of_charge/state}
+  bms_i:         {topic: battery_1/current/state}
+  cell_v_min:    {topic: battery_1/cell_voltage_-_lowest/state}
+  cell_v_max:    {topic: battery_1/cell_voltage_-_highest/state}
+  temp_max:      {topic: battery_1/temperature/state}
+text:
+  status:        {topic: inverter_1/device_mode/state}
