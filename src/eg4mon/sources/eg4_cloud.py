@@ -31,6 +31,7 @@ from .base import Sample, apply_field_map
 log = logging.getLogger(__name__)
 
 LOGIN = "/WManage/api/login"
+LOGIN_LEGACY = "/WManage/web/login"  # older portal path, tried if the API path doesn't answer JSON
 PLANTS = "/WManage/web/config/plant/list/viewer"
 DEVICES = "/WManage/api/inverterOverview/list"
 RUNTIME = "/WManage/api/inverter/getInverterRuntime"
@@ -58,7 +59,13 @@ class EG4CloudClient:
         self._username, self._password = username, password
         self._http = httpx.AsyncClient(
             base_url=base_url.rstrip("/"), timeout=timeout, transport=transport,
-            headers={"User-Agent": "eg4mon (read-only monitor)"}, follow_redirects=False,
+            headers={
+                "User-Agent": "eg4mon (read-only monitor)",
+                # Without these the portal answers its HTML login page (HTTP 200) instead of JSON.
+                "Accept": "application/json, text/javascript, */*; q=0.01",
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            follow_redirects=False,
         )
         self._logged_in = False
 
@@ -72,16 +79,25 @@ class EG4CloudClient:
         await self.aclose()
 
     async def login(self) -> dict:
-        r = await self._http.post(LOGIN, data={
-            "account": self._username, "password": self._password, "language": "ENGLISH",
-        })
-        data = _json_or_none(r)
-        if r.status_code != 200 or not data or not data.get("success"):
-            msg = (data or {}).get("msg") or (data or {}).get("message") or f"HTTP {r.status_code}"
-            raise EG4AuthError(f"EG4 login failed: {msg}")
-        self._logged_in = True
-        log.info("EG4 cloud login ok")
-        return data
+        form = {"account": self._username, "password": self._password, "language": "ENGLISH"}
+        problems = []
+        for path in (LOGIN, LOGIN_LEGACY):
+            r = await self._http.post(path, data=form)
+            data = _json_or_none(r)
+            if data is None:
+                problems.append(f"{path}: {_describe(r)}")
+                continue
+            if data.get("success"):
+                self._logged_in = True
+                log.info("EG4 cloud login ok (%s)", path)
+                return data
+            # A JSON answer is authoritative: wrong account/password, locked account, ...
+            msg = data.get("msg") or data.get("message") or f"no message; keys {sorted(data)}"
+            raise EG4AuthError(f"EG4 login rejected by {path}: {msg}")
+        raise EG4AuthError(
+            "EG4 login failed, the portal did not return a JSON login result. "
+            "Check EG4_BASE_URL (US: https://monitor.eg4electronics.com). Responses: "
+            + " | ".join(problems))
 
     async def post(self, path: str, data: dict[str, Any]) -> dict:
         if not self._logged_in:
@@ -96,7 +112,7 @@ class EG4CloudClient:
                 await self.login()
                 continue
             if body is None:
-                raise EG4ApiError(f"{path}: non-JSON response (HTTP {r.status_code})")
+                raise EG4ApiError(f"{path}: non-JSON response ({_describe(r)})")
             if r.status_code != 200:
                 raise EG4ApiError(f"{path}: HTTP {r.status_code}")
             if body.get("success") is False:
@@ -135,6 +151,14 @@ def _json_or_none(r: httpx.Response) -> dict | None:
     except ValueError:
         return None
     return data if isinstance(data, dict) else None
+
+
+def _describe(r: httpx.Response) -> str:
+    """Short, credential-free description of an unexpected response, for error messages."""
+    ctype = r.headers.get("content-type", "?")
+    where = f" -> {r.headers['location']}" if "location" in r.headers else ""
+    snippet = " ".join(r.text[:160].split()) if r.content else "(empty body)"
+    return f"HTTP {r.status_code}{where}, {ctype}, body starts: {snippet!r}"
 
 
 def load_field_map(path: Path) -> dict:
