@@ -24,6 +24,7 @@ RUNTIME = {
 MIDBOX = {"success": True, "midboxData": {
     "gridL1ActivePower": 120, "gridL2ActivePower": 80, "loadL1ActivePower": 400,
     "loadL2ActivePower": 450, "upsL1ActivePower": 0, "upsL2ActivePower": 0,
+    "smartLoad1L1ActivePower": 163, "smartLoad1L2ActivePower": 0, "smartLoad2L1ActivePower": 301,
     "genL1ActivePower": 0, "genL2ActivePower": 0, "gridRmsVolt": 2405,
     "deviceTime": "2026-11-06 12:00:00",
 }}
@@ -65,7 +66,8 @@ def test_combine_maps_and_overrides():
     assert v["battery_v"] == pytest.approx(53.5)
     assert v["battery_p"] == 3200
     assert v["pv1_w"] == 2100 and v["pv2_w"] == 1900
-    assert v["grid_w"] == 200 and v["load_w"] == 850  # GridBOSS wins over inverter
+    assert v["grid_w"] == 200
+    assert v["load_w"] == 850 + 163 + 301  # GridBOSS load port + smart ports; wins over inverter
     assert v["status"] == "PV Charge + Grid off"
 
 

@@ -18,11 +18,14 @@ COLORS = {
     "model": "#2a78d6",      # slot 1 blue   - model SOC / battery
     "inverter": "#eb6834",   # slot 2 orange - inverter SOC (voltage mode)
     "bms": "#1baf7a",        # slot 3 aqua   - Daly BMS
-    "pv": "#eda100",         # slot 4 yellow
-    "load": "#e87ba4",       # slot 5 magenta
     "pv2": "#008300",        # slot 6 green
-    "grid": "#6250d6",       # slot 7 violet
     "measured": "#52514e",   # neutral ink for measurements vs model
+    # Power flows (owner's choice, used on Live and History)
+    "pv": "#2a78d6",         # solar: blue
+    "load": "#eda100",       # consumption: yellow
+    "battery": "#2e9e3e",    # battery: green
+    "grid": "#e34948",       # grid: red
+    "soc": "#b39ddb",        # SOC overlay: light purple
 }
 STATUS = {"good": "#0ca30c", "warning": "#fab219", "critical": "#d12f2f"}
 

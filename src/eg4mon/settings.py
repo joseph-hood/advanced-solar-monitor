@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     api_token: SecretStr = SecretStr("")  # optional bearer token; empty = no auth
     dashboard_api_url: str = "http://localhost:8000"
     dashboard_refresh_seconds: int = 10
+    dashboard_file: Path = REPO_ROOT / "config" / "dashboard.yaml"
 
     log_level: str = "INFO"
 
@@ -66,6 +67,9 @@ class Settings(BaseSettings):
 
     def pipeline(self) -> dict:
         return load_yaml(self.pipeline_file)
+
+    def dashboard(self) -> dict:
+        return load_yaml(self.dashboard_file)
 
 
 def load_yaml(path: Path) -> dict:

@@ -1,0 +1,16 @@
+# Dashboard display settings (read by the Streamlit app only).
+
+battery_icon:
+  yellow_below: 50      # % SOC; green at or above
+  red_below: 25         # % SOC
+
+# "Time remaining for critical loads": a planning number for no sun, no grid.
+# See src/eg4mon/runtime.py for the model.
+critical_runtime:
+  reserve_soc: 0.10         # run time is to this SOC
+  window_days: 7            # trailing load history used
+  bucket_s: 300             # load is averaged per bucket first (smooths compressor cycling)
+  percentile: 50            # of bucketed load; median ignores large intermittent loads
+  min_samples: 72           # buckets (6 h at 300 s) needed before an estimate is shown
+  inverter_efficiency: 0.92 # fallback until no-sun, no-grid data measures it
+  critical_load_w: null     # set a number (W) to plan for a fixed load instead

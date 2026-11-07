@@ -34,7 +34,7 @@ st.plotly_chart(plot_layout(fig, 300, "V"), width="stretch")
 
 st.subheader("Power")
 fig = go.Figure()
-for col, name, color in (("pv_w", "PV", COLORS["pv"]), ("p", "Battery (+ charge)", COLORS["model"]),
+for col, name, color in (("pv_w", "PV", COLORS["pv"]), ("p", "Battery (+ charge)", COLORS["battery"]),
                          ("load_w", "Load", COLORS["load"]), ("grid_w", "Grid (+ import)", COLORS["grid"])):
     if col in df and df[col].notna().any():
         fig.add_scatter(x=df["time"], y=df[col], name=name, line=dict(color=color, width=2))

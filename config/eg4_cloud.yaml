@@ -33,7 +33,20 @@ inverter:            # /WManage/api/inverter/getInverterRuntime, one call per se
 gridboss:            # /WManage/api/midbox/getMidboxRuntime; overrides inverter values when present
   numeric:
     grid_w:        [{path: midboxData.gridL1ActivePower}, {path: midboxData.gridL2ActivePower}]
-    load_w:        [{path: midboxData.loadL1ActivePower}, {path: midboxData.loadL2ActivePower}]
+    # House loads sit on the smart ports here, so the load port reads 0. Both are summed.
+    # (Dump check: smartLoad1L1 163 W + smartLoad2L1 301 W == hybridPower 464 W.)
+    # If a smart port is ever reconfigured as AC-couple/generator, drop its terms.
+    load_w:
+      - {path: midboxData.loadL1ActivePower}
+      - {path: midboxData.loadL2ActivePower}
+      - {path: midboxData.smartLoad1L1ActivePower}
+      - {path: midboxData.smartLoad1L2ActivePower}
+      - {path: midboxData.smartLoad2L1ActivePower}
+      - {path: midboxData.smartLoad2L2ActivePower}
+      - {path: midboxData.smartLoad3L1ActivePower}
+      - {path: midboxData.smartLoad3L2ActivePower}
+      - {path: midboxData.smartLoad4L1ActivePower}
+      - {path: midboxData.smartLoad4L2ActivePower}
     ups_w:         [{path: midboxData.upsL1ActivePower}, {path: midboxData.upsL2ActivePower}]
     gen_w:         [{path: midboxData.genL1ActivePower}, {path: midboxData.genL2ActivePower}]
     grid_v:        [{path: midboxData.gridRmsVolt, scale: 0.1}]

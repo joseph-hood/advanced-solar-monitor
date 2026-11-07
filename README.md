@@ -169,15 +169,36 @@ eg4mon replay my_export.csv --out results.csv
 ## Deployment
 
 **systemd** (on a Pi or a home server). Units are in `deploy/systemd/`. They assume
-`/opt/eg4mon` with a venv in `.venv` and a user called `eg4mon`.
+`/opt/eg4mon` with a venv in `.venv`, a `.env` next to it, and a user called `eg4mon`.
+Create all of that first. If `.env` is missing, systemd fails the units with
+`Failed to load environment files` / `Result: resources` and keeps retrying.
+
+```bash
+sudo useradd --system --home /opt/eg4mon --shell /usr/sbin/nologin eg4mon
+sudo git clone https://github.com/joseph-hood/advanced-solar-monitor.git /opt/eg4mon
+sudo cp .env /opt/eg4mon/.env          # or start from .env.example
+sudo python3 -m venv /opt/eg4mon/.venv
+sudo /opt/eg4mon/.venv/bin/pip install -e "/opt/eg4mon[dashboard,mqtt]"
+sudo mkdir -p /opt/eg4mon/data
+sudo chown -R eg4mon:eg4mon /opt/eg4mon
+sudo chmod 600 /opt/eg4mon/.env
+```
+
+Use an editable install (`-e`). Settings find `config/` relative to the source tree, so a
+regular install into site-packages won't find the YAML files.
 
 ```bash
 sudo cp deploy/systemd/*.service /etc/systemd/system/
 ```
 
 ```bash
+sudo systemctl daemon-reload
 sudo systemctl enable --now eg4mon-collect eg4mon-api eg4mon-dashboard
 ```
+
+To run from a dev checkout instead, edit the installed units: set `User=` to your user and
+replace `/opt/eg4mon` with the checkout path. Then run `daemon-reload` and
+`systemctl reset-failed 'eg4mon-*'` before you restart them.
 
 **docker compose**: `docker compose up -d`. It uses `.env` and keeps data in a named volume.
 
